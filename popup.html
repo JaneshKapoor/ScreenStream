@@ -1,32 +1,75 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Screen & Camera Recorder</title>
+    <title>ScreenStream</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 20px;
+      }
+      video {
+        width: 100%;
+        max-height: 300px;
+        margin-top: 10px;
+        display: none;
+      }
+      #settings {
+        margin-bottom: 20px;
+      }
+      button {
+        background-color: #6200EE;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 14px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      button:disabled {
+        background-color: #CCC;
+      }
+    </style>
   </head>
   <body>
-    <h1>Record Your Screen & Camera</h1>
+    <h1>ScreenStream</h1>
 
     <div id="settings">
       <label>
         <input type="radio" name="recordMode" value="screen" checked /> Screen Only
       </label>
+      <br />
       <label>
         <input type="radio" name="recordMode" value="screen-camera" /> Screen + Camera
       </label>
+      <br />
       <label>
         <input type="radio" name="recordMode" value="camera" /> Camera Only
       </label>
-      <br />
+      <br /><br />
+
+      <!-- Select resolution -->
+      <label for="resolution">Resolution:</label>
       <select id="resolution">
         <option value="1080p">1080p</option>
         <option value="720p">720p</option>
       </select>
-      <br />
+      <br /><br />
+
+      <!-- Select audio option -->
+      <label for="audioInput">Audio Input:</label>
+      <select id="audioInput">
+        <option value="microphone">Microphone</option>
+        <option value="system-audio">System Audio</option>
+        <option value="both">Both Microphone & System Audio</option>
+      </select>
+      <br /><br />
+
       <button id="start">Start Recording</button>
-      <button id="stop">Stop Recording</button>
+      <button id="stop" disabled>Stop Recording</button>
     </div>
 
-    <video id="preview" autoplay></video>
+    <video id="preview" autoplay muted></video>
 
     <script src="popup.js"></script>
   </body>
