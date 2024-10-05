@@ -5,6 +5,13 @@ let cameraStream;
 let micStream;
 let finalStream;
 
+// Disable input fields
+const disableInputs = (state) => {
+  document.getElementById('audioInput').disabled = state;
+  document.getElementById('resolution').disabled = state;
+  document.querySelectorAll('input[name="recordMode"]').forEach(input => input.disabled = state);
+};
+
 document.getElementById('start').addEventListener('click', async () => {
   const mode = document.querySelector('input[name="recordMode"]:checked').value;
   const audioInput = document.getElementById('audioInput').value;
@@ -13,9 +20,10 @@ document.getElementById('start').addEventListener('click', async () => {
   // Clear previous recording chunks
   chunks = [];
 
-  // Disable Start button, enable Stop button
+  // Disable Start button, enable Stop button, disable inputs
   document.getElementById('start').disabled = true;
   document.getElementById('stop').disabled = false;
+  disableInputs(true);  // Disable inputs during recording
 
   try {
     // Capture Screen Stream with or without system audio
@@ -37,10 +45,10 @@ document.getElementById('start').addEventListener('click', async () => {
       });
     }
 
-    // Capture Camera Stream if required
+    // Capture Camera Stream with higher resolution (1280x720 or more)
     if (mode === 'screen-camera' || mode === 'camera') {
       cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
+        video: { width: 720, height: 720},  // Increase resolution for the camera
         audio: false // We manage audio separately
       });
     }
@@ -56,15 +64,6 @@ document.getElementById('start').addEventListener('click', async () => {
 
       const videoElement = document.createElement('video');
       videoElement.srcObject = cameraStream;
-      videoElement.style.position = 'absolute';
-      videoElement.style.width = '200px';
-      videoElement.style.height = '200px';
-      videoElement.style.borderRadius = '50%';
-      videoElement.style.bottom = '10px';
-      videoElement.style.right = '10px';
-      videoElement.style.border = '5px solid purple';
-      videoElement.style.zIndex = '1000';
-      document.body.appendChild(videoElement);
       videoElement.play();
 
       canvas.width = resolution === '1080p' ? 1920 : 1280;
@@ -72,10 +71,35 @@ document.getElementById('start').addEventListener('click', async () => {
 
       const drawFrame = () => {
         context.clearRect(0, 0, canvas.width, canvas.height); // Clear previous frame
-        context.drawImage(screenVideo, 0, 0, canvas.width, canvas.height); // Draw screen
-        context.drawImage(videoElement, canvas.width - 210, canvas.height - 210, 200, 200); // Draw camera feed
-        requestAnimationFrame(drawFrame);
+
+        // Draw the screen video
+        context.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
+
+        // Create a circular path for the camera feed
+        const cameraSize = 320; // Diameter of the camera view
+        const padding = 60; // Extra padding from the bottom and right sides
+        const cameraX = canvas.width - (cameraSize + padding); // Bottom-right position with more padding
+        const cameraY = canvas.height - (cameraSize + padding);
+
+        context.save();
+        context.beginPath();
+        context.arc(cameraX + cameraSize / 2, cameraY + cameraSize / 2, cameraSize / 2, 0, Math.PI * 2);
+        context.clip();
+
+        // Draw the camera video within the circular path
+        context.drawImage(videoElement, cameraX, cameraY, cameraSize, cameraSize);
+
+        // Restore the canvas and draw the border
+        context.restore();
+        context.beginPath();
+        context.arc(cameraX + cameraSize / 2, cameraY + cameraSize / 2, cameraSize / 2 + 5, 0, Math.PI * 2);
+        context.lineWidth = 5; // Thickness of the border
+        context.strokeStyle = 'purple'; // Border color
+        context.stroke();
+
+        requestAnimationFrame(drawFrame); // Repeat this for every frame
       };
+
       drawFrame();
 
       const canvasStream = canvas.captureStream();
@@ -93,11 +117,6 @@ document.getElementById('start').addEventListener('click', async () => {
 
     // Create the final combined stream
     finalStream = new MediaStream(combinedStreamTracks);
-
-    // Preview the stream
-    const preview = document.getElementById('preview');
-    preview.srcObject = finalStream;
-    preview.style.display = 'block';
 
     // Initialize MediaRecorder for WebM format
     const mimeType = 'video/webm; codecs=vp9';
@@ -119,6 +138,11 @@ document.getElementById('start').addEventListener('click', async () => {
       document.body.appendChild(a);
       a.click();
       URL.revokeObjectURL(url);
+
+      // Re-enable inputs and start button when recording stops
+      document.getElementById('start').disabled = false;
+      document.getElementById('stop').disabled = true;
+      disableInputs(false);  // Re-enable inputs after recording
     };
 
     mediaRecorder.start();
@@ -134,10 +158,6 @@ document.getElementById('stop').addEventListener('click', () => {
   if (screenStream) screenStream.getTracks().forEach(track => track.stop());
   if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
   if (micStream) micStream.getTracks().forEach(track => track.stop());
-
-  // Enable Start button, disable Stop button
-  document.getElementById('start').disabled = false;
-  document.getElementById('stop').disabled = true;
 
   // Hide preview
   document.getElementById('preview').style.display = 'none';
