@@ -65,6 +65,14 @@
       </select>
       <br /><br />
 
+      <!-- Select file format -->
+      <label for="fileFormat">File Format:</label>
+      <select id="fileFormat">
+        <option value="webm">WebM</option>
+        <option value="mp4">MP4</option>
+      </select>
+      <br /><br />
+
       <button id="start">Start Recording</button>
       <button id="stop" disabled>Stop Recording</button>
     </div>
@@ -74,3 +82,4 @@
     <script src="popup.js"></script>
   </body>
 </html>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.9.8/dist/ffmpeg.min.js"></script>

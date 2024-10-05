@@ -10,6 +10,9 @@ document.getElementById('start').addEventListener('click', async () => {
   const audioInput = document.getElementById('audioInput').value;
   const resolution = document.getElementById('resolution').value;
 
+  // Clear previous recording chunks
+  chunks = [];
+
   // Disable Start button, enable Stop button
   document.getElementById('start').disabled = true;
   document.getElementById('stop').disabled = false;
@@ -23,7 +26,7 @@ document.getElementById('start').addEventListener('click', async () => {
           width: resolution === '1080p' ? 1920 : 1280,
           height: resolution === '1080p' ? 1080 : 720
         },
-        audio: audioInput !== 'microphone' // Enable system audio if selected
+        audio: audioInput === 'system-audio' || audioInput === 'both' // Enable system audio if selected
       });
     }
 
@@ -42,60 +45,64 @@ document.getElementById('start').addEventListener('click', async () => {
       });
     }
 
-    let combinedStream;
+    // Combine streams based on mode
+    let combinedStreamTracks = [];
     if (mode === 'screen-camera') {
-      // Combine screen stream and camera stream
-      const videoElement = document.createElement('video');
-      videoElement.srcObject = cameraStream;
-      videoElement.style.position = 'absolute';
-      videoElement.style.width = '150px';
-      videoElement.style.height = '150px';
-      videoElement.style.borderRadius = '50%';
-      videoElement.style.bottom = '10px';
-      videoElement.style.right = '10px';
-      videoElement.style.zIndex = '1000';
-
-      document.body.appendChild(videoElement);
-      videoElement.play();
-
-      // Overlay camera stream on screen stream
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
-
       const screenVideo = document.createElement('video');
       screenVideo.srcObject = screenStream;
       screenVideo.play();
 
-      // Set up canvas size according to screen resolution
+      const videoElement = document.createElement('video');
+      videoElement.srcObject = cameraStream;
+      videoElement.style.position = 'absolute';
+      videoElement.style.width = '200px';
+      videoElement.style.height = '200px';
+      videoElement.style.borderRadius = '50%';
+      videoElement.style.bottom = '10px';
+      videoElement.style.right = '10px';
+      videoElement.style.border = '5px solid purple';
+      videoElement.style.zIndex = '1000';
+      document.body.appendChild(videoElement);
+      videoElement.play();
+
       canvas.width = resolution === '1080p' ? 1920 : 1280;
       canvas.height = resolution === '1080p' ? 1080 : 720;
 
-      // Draw screen recording and camera view in a loop
       const drawFrame = () => {
-        context.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
-        context.drawImage(videoElement, canvas.width - 160, canvas.height - 160, 150, 150);
+        context.clearRect(0, 0, canvas.width, canvas.height); // Clear previous frame
+        context.drawImage(screenVideo, 0, 0, canvas.width, canvas.height); // Draw screen
+        context.drawImage(videoElement, canvas.width - 210, canvas.height - 210, 200, 200); // Draw camera feed
         requestAnimationFrame(drawFrame);
       };
       drawFrame();
 
-      combinedStream = canvas.captureStream();
-      finalStream = new MediaStream([...combinedStream.getTracks(), ...(micStream ? micStream.getTracks() : [])]);
+      const canvasStream = canvas.captureStream();
+      combinedStreamTracks = [...canvasStream.getTracks()];
     } else if (mode === 'camera') {
-      // Only camera stream
-      finalStream = cameraStream;
+      combinedStreamTracks = [...cameraStream.getTracks()];
     } else {
-      // Only screen stream
-      finalStream = new MediaStream([...screenStream.getTracks(), ...(micStream ? micStream.getTracks() : [])]);
+      combinedStreamTracks = [...screenStream.getTracks()];
     }
+
+    // Add microphone audio tracks if they exist
+    if (micStream) {
+      combinedStreamTracks = [...combinedStreamTracks, ...micStream.getAudioTracks()];
+    }
+
+    // Create the final combined stream
+    finalStream = new MediaStream(combinedStreamTracks);
 
     // Preview the stream
     const preview = document.getElementById('preview');
     preview.srcObject = finalStream;
     preview.style.display = 'block';
 
-    // Initialize MediaRecorder
+    // Initialize MediaRecorder for WebM format
+    const mimeType = 'video/webm; codecs=vp9';
     mediaRecorder = new MediaRecorder(finalStream, {
-      mimeType: 'video/webm; codecs=vp9'
+      mimeType
     });
 
     mediaRecorder.ondataavailable = (event) => {
@@ -103,7 +110,7 @@ document.getElementById('start').addEventListener('click', async () => {
     };
 
     mediaRecorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'video/webm' });
+      const blob = new Blob(chunks, { type: mimeType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
@@ -122,7 +129,7 @@ document.getElementById('start').addEventListener('click', async () => {
 
 document.getElementById('stop').addEventListener('click', () => {
   mediaRecorder.stop();
-  
+
   // Stop all tracks
   if (screenStream) screenStream.getTracks().forEach(track => track.stop());
   if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
