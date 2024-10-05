@@ -27,15 +27,25 @@ document.getElementById('start').addEventListener('click', async () => {
 
   try {
     // Capture Screen Stream with or without system audio
-    if (mode !== 'camera') {
-      screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: {
-          mediaSource: 'screen',
-          width: resolution === '1080p' ? 1920 : 1280,
-          height: resolution === '1080p' ? 1080 : 720
-        },
-        audio: audioInput === 'system-audio' || audioInput === 'both' // Enable system audio if selected
-      });
+    try {
+      if (mode !== 'camera') {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            mediaSource: 'screen',
+            width: resolution === '1080p' ? 1920 : 1280,
+            height: resolution === '1080p' ? 1080 : 720
+          },
+          audio: audioInput === 'system-audio' || audioInput === 'both' // Enable system audio if selected
+        });
+      }
+    } catch (err) {
+      console.error("Screen sharing was canceled or failed: ", err);
+
+      // Reset everything if screen sharing is canceled
+      document.getElementById('start').disabled = false;
+      document.getElementById('stop').disabled = true;
+      disableInputs(false);  // Re-enable inputs after cancellation
+      return;  // Exit the function since the screen stream is not available
     }
 
     // Capture Microphone stream if required
@@ -48,7 +58,7 @@ document.getElementById('start').addEventListener('click', async () => {
     // Capture Camera Stream with higher resolution (1280x720 or more)
     if (mode === 'screen-camera' || mode === 'camera') {
       cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 720, height: 720},  // Increase resolution for the camera
+        video: { width: 720, height: 720 },  // Set camera resolution
         audio: false // We manage audio separately
       });
     }
