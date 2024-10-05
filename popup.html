@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Screen & Camera Recorder</title>
+  </head>
+  <body>
+    <h1>Record Your Screen & Camera</h1>
+
+    <div id="settings">
+      <label>
+        <input type="radio" name="recordMode" value="screen" checked /> Screen Only
+      </label>
+      <label>
+        <input type="radio" name="recordMode" value="screen-camera" /> Screen + Camera
+      </label>
+      <label>
+        <input type="radio" name="recordMode" value="camera" /> Camera Only
+      </label>
+      <br />
+      <select id="resolution">
+        <option value="1080p">1080p</option>
+        <option value="720p">720p</option>
+      </select>
+      <br />
+      <button id="start">Start Recording</button>
+      <button id="stop">Stop Recording</button>
+    </div>
+
+    <video id="preview" autoplay></video>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
