@@ -5,6 +5,10 @@ let cameraStream;
 let micStream;
 let finalStream;
 
+const ffmpegScript = document.createElement('script');
+ffmpegScript.src = 'libs/ffmpeg.min.js';  // Ensure the path is correct
+document.head.appendChild(ffmpegScript);
+
 // Disable input fields
 const disableInputs = (state) => {
   document.getElementById('audioInput').disabled = state;
@@ -39,7 +43,7 @@ document.getElementById('start').addEventListener('click', async () => {
         });
       }
     } catch (err) {
-      console.error("Screen sharing was canceled or failed: ", err);
+      // console.error("Screen sharing was canceled or failed: ", err);
 
       // Reset everything if screen sharing is canceled
       document.getElementById('start').disabled = false;
@@ -79,6 +83,8 @@ document.getElementById('start').addEventListener('click', async () => {
       canvas.width = resolution === '1080p' ? 1920 : 1280;
       canvas.height = resolution === '1080p' ? 1080 : 720;
 
+      // Use setInterval for fallback and requestAnimationFrame for active tab rendering
+      let frameInterval;
       const drawFrame = () => {
         context.clearRect(0, 0, canvas.width, canvas.height); // Clear previous frame
 
@@ -107,13 +113,25 @@ document.getElementById('start').addEventListener('click', async () => {
         context.strokeStyle = 'purple'; // Border color
         context.stroke();
 
-        requestAnimationFrame(drawFrame); // Repeat this for every frame
+        // Continue rendering frames
+        requestAnimationFrame(drawFrame); // Continue drawing for active tabs
       };
 
-      drawFrame();
+      // Call drawFrame with requestAnimationFrame for active tabs
+      requestAnimationFrame(drawFrame);
+
+      // Fallback: Use setInterval to capture frames every 100ms if the tab is inactive
+      frameInterval = setInterval(() => {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
+        context.drawImage(videoElement, cameraX, cameraY, cameraSize, cameraSize);
+      }, 100);  // 10 FPS fallback
 
       const canvasStream = canvas.captureStream();
       combinedStreamTracks = [...canvasStream.getTracks()];
+
+      // Clear interval when stopping
+      document.getElementById('stop').addEventListener('click', () => clearInterval(frameInterval));
     } else if (mode === 'camera') {
       combinedStreamTracks = [...cameraStream.getTracks()];
     } else {

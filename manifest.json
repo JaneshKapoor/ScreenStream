@@ -1,18 +1,22 @@
 {
-    "manifest_version": 3,
-    "name": "Screen & Camera Recorder",
-    "version": "1.0",
-    "permissions": ["activeTab", "tabCapture", "storage"],
-    "action": {
-      "default_popup": "popup.html"
-    },
-    "background": {
-      "service_worker": "background.js"
-    },
-    "content_scripts": [
-      {
-        "matches": ["<all_urls>"],
-        "js": ["content.js"]
-      }
-    ]
-  }  
+  "manifest_version": 3,
+  "name": "ScreenStream",
+  "version": "1.0",
+  "description": "Record your screen and camera",
+  "permissions": ["activeTab", "tabCapture", "storage", "desktopCapture", "windows", "system.display"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icon1.png",
+      "48": "icon2.png",
+      "128": "icon3.png"
+    }
+  },
+  "icons": {
+    "16": "icon1.png",
+    "48": "icon2.png",
+    "128": "icon3.png"
+  }
+}
